@@ -2,29 +2,26 @@
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
 venv/
-ENV/
 
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# MetaTrader
-*.ini
-*.dat
-*.txt.bak
-
-# Logs and databases
-*.log
-*.sqlite
-
-# Environment variables
+# Environment
 .env
 .env.local
 
-# Jupyter Notebook
-.ipynb_checkpoints
+# IDE
+.vscode/
+.idea/
+
+# Data files
+data/raw/**/*.csv
+data/processed/**/*.csv
+*.log
+
+# Keep data directory structure
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# MetaTrader
+*.ini
+*.set
+*.dat
