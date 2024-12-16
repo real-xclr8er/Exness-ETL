@@ -1,27 +1,73 @@
-# Python
+# Python related
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
 venv/
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Environment
+# Environment files
 .env
 .env.local
+.python-version
+pip-log.txt
+pip-delete-this-directory.txt
 
-# IDE
-.vscode/
+# IDE specific files
 .idea/
+.vscode/
+*.swp
+*.swo
+*~
 
-# Data files
+# Operating System
+.DS_Store
+Thumbs.db
+
+# Project specific
 data/raw/**/*.csv
 data/processed/**/*.csv
 *.log
+*.parquet
 
-# Keep data directory structure
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-
-# MetaTrader
+# MetaTrader specific
 *.ini
 *.set
 *.dat
+*.ex4
+*.ex5
+*.hst
+*.fxt
+
+# Spark specific
+derby.log
+metastore_db/
+spark-warehouse/
+*.crc
+
+# Keep empty directories
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb

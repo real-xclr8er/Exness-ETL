@@ -1,0 +1,24 @@
+# Use Bitnami Spark as base image
+FROM bitnami/spark:3.4.0
+
+USER root
+
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    pyspark==3.4.0 \
+    pandas \
+    numpy \
+    pyarrow
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /opt/spark/src/utils && \
+    chown -R 1001:root /opt/spark/src && \
+    chmod -R 775 /opt/spark/src
+
+# Switch back to non-root user for security
+USER 1001
+
+# Set working directory
+WORKDIR /opt/spark/work-dir
+
+# Default command inherited from base image
