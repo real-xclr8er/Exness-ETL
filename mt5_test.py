@@ -1,7 +1,6 @@
 # mt5_test.py
 
 import MetaTrader5 as mt5
-import pandas as pd
 from datetime import datetime
 
 def test_mt5_connection():
@@ -21,18 +20,13 @@ def test_mt5_connection():
     if terminal_info is not None:
         print("\nTerminal Info:")
         print(f"  Connected: {terminal_info.connected}")
-        print(f"  Enable DLL: {terminal_info.dlls_allowed}")
         print(f"  Trade allowed: {terminal_info.trade_allowed}")
         print(f"  Maximum bars in chart: {terminal_info.maxbars}")
-        print(f"  Community account: {terminal_info.community_account}")
-        print(f"  Community connection: {terminal_info.community_connection}")
         
         if not terminal_info.dlls_allowed:
-            print("\nWARNING: DLL imports are not allowed!")
-            print("Please enable DLL imports in MetaTrader5 settings:")
-            print("1. Tools -> Options -> Expert Advisors")
-            print("2. Check 'Allow DLL imports'")
-            print("3. Restart MetaTrader5")
+            print("\nNote: DLL imports are currently disabled.")
+            print("This only affects certain automated trading features.")
+            print("Basic market data collection and analysis will work normally.")
     
     # Get account info
     account_info = mt5.account_info()
@@ -45,13 +39,21 @@ def test_mt5_connection():
         print("\nFailed to get account info")
         print(f"Error code: {mt5.last_error()}")
     
-    # Test symbol availability
+    # Test market data access
+    print("\nTesting market data access:")
     symbols = mt5.symbols_total()
     if symbols > 0:
-        print(f"\nTotal symbols available: {symbols}")
-        print("First few symbols:")
+        print(f"✓ Successfully connected to market data feed")
+        print(f"✓ Total symbols available: {symbols}")
+        print("\nSample symbols:")
         for symbol in mt5.symbols_get()[:3]:
             print(f"  {symbol.name}")
+            
+        # Test data retrieval for first symbol
+        first_symbol = mt5.symbols_get()[0].name
+        rates = mt5.copy_rates_from(first_symbol, mt5.TIMEFRAME_D1, datetime.now(), 1)
+        if rates is not None:
+            print(f"\n✓ Successfully retrieved price data for {first_symbol}")
     
     # Clean up
     mt5.shutdown()
