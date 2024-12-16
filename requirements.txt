@@ -1,0 +1,7 @@
+# Base requirements
+MetaTrader5==5.0.47  # Latest stable version
+pandas==2.0.3
+numpy==1.24.3
+pytest==7.4.0
+python-dotenv==1.0.0
+jupyter==1.0.0
