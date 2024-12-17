@@ -1,4 +1,5 @@
-# Python related
+# Python-related files and directories
+# These files are created during Python execution and shouldn't be version controlled
 __pycache__/
 *.py[cod]
 *$py.class
@@ -21,7 +22,8 @@ var/
 .installed.cfg
 *.egg
 
-# Environment files
+# Environment and local configuration files
+# These often contain sensitive information or machine-specific settings
 .env
 .env.local
 .python-version
@@ -29,23 +31,28 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # IDE specific files
+# Different developers may use different IDEs, so these settings should remain local
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
 
-# Operating System
+# Operating System generated files
+# These are system-specific and shouldn't be tracked
 .DS_Store
 Thumbs.db
 
-# Project specific
+# Project specific data files
+# Our data directories contain large files that should be generated, not tracked
 data/raw/**/*.csv
 data/processed/**/*.csv
+data/ticks/**/*.parquet  # New addition for tick data
 *.log
 *.parquet
 
-# MetaTrader specific
+# MetaTrader specific files
+# These are configuration and binary files from MT5
 *.ini
 *.set
 *.dat
@@ -54,20 +61,25 @@ data/processed/**/*.csv
 *.hst
 *.fxt
 
-# Spark specific
+# Spark specific files and directories
+# These are generated during Spark execution
 derby.log
 metastore_db/
 spark-warehouse/
 *.crc
 
 # Keep empty directories
+# These ensure correct project structure even when data files are ignored
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+!data/ticks/.gitkeep     # New addition to maintain tick data directory
 
-# Docker
+# Docker related files
+# Docker specific configurations that shouldn't be shared
 .docker/
 docker-compose.override.yml
 
 # Jupyter Notebook
+# Notebook checkpoints and working files
 .ipynb_checkpoints
 *.ipynb
