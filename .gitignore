@@ -83,3 +83,7 @@ docker-compose.override.yml
 # Notebook checkpoints and working files
 .ipynb_checkpoints
 *.ipynb
+
+# PyInstaller build files
+# These are generated during executable creation and shouldn't be tracked
+*.spec
