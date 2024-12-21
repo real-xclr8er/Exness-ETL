@@ -1,0 +1,21 @@
+# network-setup.yml
+# Purpose: Establish consistent networking across all trading system services
+# Usage: Run this before starting other services
+# Command: docker-compose -f network-setup.yml up -d
+
+networks:
+  trading-network:
+    name: trading-network
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+          gateway: 172.28.0.1
+
+services:
+  network-creator:
+    image: alpine:latest
+    command: sh -c "echo 'Network created' && tail -f /dev/null"
+    networks:
+      - trading-network

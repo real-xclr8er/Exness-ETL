@@ -1,0 +1,58 @@
+﻿# Dockerfile.timescaledb
+
+# Base image
+FROM timescale/timescaledb:latest-pg14
+
+# Set environment variables
+ENV POSTGRES_DB=market_data
+ENV POSTGRES_USER=market_collector
+ENV POSTGRES_PASSWORD=1331
+
+# Update system packages and install utilities
+RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg \
+    lsb-release && \
+    apt-get clean
+
+# Add custom PostgreSQL configuration for authentication
+COPY ./config/pg_hba.conf /var/lib/postgresql/data/pg_hba.conf
+
+# Add custom PostgreSQL settings for time-series optimizations
+RUN echo "\
+    # Connection settings\n\
+    listen_addresses = '*'\n\
+    max_connections = 100\n\
+    \n\
+    # Memory settings\n\
+    shared_buffers = 512MB\n\
+    effective_cache_size = 1GB\n\
+    work_mem = 4MB\n\
+    \n\
+    # WAL settings\n\
+    wal_buffers = 16MB\n\
+    checkpoint_completion_target = 0.9\n\
+    min_wal_size = 80MB\n\
+    max_wal_size = 1GB\n\
+    \n\
+    # TimescaleDB-specific settings\n\
+    timescaledb.max_background_workers = 8\n\
+    max_worker_processes = 8\n\
+    max_parallel_workers_per_gather = 4\n\
+    parallel_setup_cost = 1000\n\
+    parallel_tuple_cost = 0.1\n\
+    \n\
+    # Logging settings\n\
+    logging_collector = on\n\
+    log_directory = 'pg_log'\n\
+    log_filename = 'postgresql.log'\n\
+    " >> /var/lib/postgresql/data/postgresql.conf
+
+# Initialize database schema during container build
+COPY ./init-scripts/ /docker-entrypoint-initdb.d/
+
+# Expose PostgreSQL port
+EXPOSE 5432
+
+# Entry point
+CMD ["postgres"]

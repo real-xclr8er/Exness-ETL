@@ -1,0 +1,38 @@
+TERMINAL & EXPERT LOGS
+----------------------
+* Timestamp of each event/log entry
+* Event type (Information, Warning, Error)
+* Source (Terminal, Expert Advisor, Script, Indicator)
+* Event description/message body (e.g., “Expert started”, “Order sent”, “Print() outputs”)
+
+HISTORICAL PRICE DATA (Bars)
+----------------------------
+* Symbol/Instrument name
+* Timeframes (M1, M5, M15, M30, H1, etc.)
+* Per bar:
+  - Timestamp (open time of the bar)
+  - Open price
+  - High price
+  - Low price
+  - Close price
+  - Volume (tick count or real volume, depending on broker feed)
+
+TICK DATA (If Previously Downloaded)
+-----------------------------------
+* Timestamp of each tick
+* Bid price
+* Ask price
+* Volume (if available)
+
+PLATFORM CONFIGURATION & METADATA
+---------------------------------
+* Symbol specifications (as last known):
+  - Tick size
+  - Contract size
+  - Spread and commission structure
+* Templates and Profiles containing:
+  - Chart configurations
+  - Indicators and their settings
+  - Chart objects and properties
+* Lists of symbols and symbol groups
+* Local user preferences (chart colors, EA settings, etc.)

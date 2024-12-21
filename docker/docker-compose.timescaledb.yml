@@ -1,0 +1,52 @@
+﻿# docker-compose.timescaledb.yml
+# Purpose: Deploy TimescaleDB with PGAdmin for database management
+# Usage: Run this configuration to start the TimescaleDB stack
+# Command: docker-compose -f docker-compose.timescaledb.yml up -d --build
+
+version: '3.8'
+
+services:
+  # Main TimescaleDB service
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    container_name: market_data_db
+    environment:
+      POSTGRES_DB: market_data
+      POSTGRES_USER: market_collector
+      POSTGRES_PASSWORD: 1331
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "15433:5432" # Use custom port to avoid conflicts
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U market_collector -d market_data" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - trading-network
+
+  # PGAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: market_data_admin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: attila.biber@icloud.com
+      PGADMIN_DEFAULT_PASSWORD: 1331
+    ports:
+      - "15050:80" # Custom port for PGAdmin
+    depends_on:
+      - timescaledb
+    restart: unless-stopped
+    networks:
+      - trading-network
+
+volumes:
+  timescale_data:
+    driver: local
+
+networks:
+  trading-network:
+    external: true
