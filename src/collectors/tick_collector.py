@@ -16,8 +16,7 @@ import queue
 import time
 import yaml
 from typing import Dict
-import pystray
-from PIL import Image, ImageDraw
+import psycopg2
 
 
 class TickCollector:
@@ -36,6 +35,15 @@ class TickCollector:
         # Data collection settings
         self.batch_size = self.config.get('batch_size', 1000)
         self.save_interval = self.config.get('save_interval', 300)
+
+        # Database connection
+        self.db_config = self.config.get("db_config", {
+            "dbname": "market_data",
+            "user": "market_collector",
+            "password": "1331",
+            "host": "localhost",
+            "port": 15433
+        })
 
         # Threading and data storage
         self.running = threading.Event()
@@ -96,7 +104,7 @@ class TickCollector:
         self.logger.info(f"Stopped collecting ticks for {symbol}")
 
     def process_queue(self):
-        """Process data queues and save tick data to files periodically."""
+        """Process data queues and save tick data to files and TimescaleDB periodically."""
         while self.running.is_set():
             now = datetime.now()
             if (now - self.last_save_time).seconds >= self.save_interval:
@@ -111,14 +119,48 @@ class TickCollector:
             time.sleep(1)
 
     def save_ticks(self, symbol: str, ticks: list):
-        """Save collected tick data to a Parquet file."""
-        file_path = self.storage_path / f"{symbol}.parquet"
+        """Save collected tick data to Parquet files and TimescaleDB."""
+        # Save to Parquet file
+        file_path = self.storage_path / f"{symbol}/{datetime.now().strftime('%Y%m%d')}.parquet"
         try:
-            df = pd.DataFrame(ticks)
-            df.to_parquet(file_path, engine="pyarrow", index=False, compression='snappy')
+            if file_path.exists():
+                existing_data = pd.read_parquet(file_path)
+                new_data = pd.DataFrame(ticks)
+                combined_data = pd.concat([existing_data, new_data], ignore_index=True)
+            else:
+                combined_data = pd.DataFrame(ticks)
+
+            # Save updated data
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            combined_data.to_parquet(file_path, engine="pyarrow", index=False, compression='snappy')
             self.logger.info(f"Saved {len(ticks)} ticks for {symbol} to {file_path}")
+
         except Exception as e:
-            self.logger.error(f"Error saving ticks for {symbol}: {e}")
+            self.logger.error(f"Error saving ticks for {symbol} to Parquet: {e}")
+
+        # Save to TimescaleDB
+        try:
+            conn = psycopg2.connect(**self.db_config)
+            cursor = conn.cursor()
+            for tick in ticks:
+                cursor.execute("""
+                    INSERT INTO tick_data (symbol, tick_time, bid_price, ask_price, last_price, volume)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT DO NOTHING;
+                """, (
+                    symbol,
+                    tick['time'],
+                    tick['bid'],
+                    tick['ask'],
+                    tick.get('last', None),
+                    tick.get('volume', None)
+                ))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            self.logger.info(f"Saved {len(ticks)} ticks for {symbol} to TimescaleDB.")
+        except Exception as e:
+            self.logger.error(f"Error saving ticks for {symbol} to TimescaleDB: {e}")
 
     def start_collection(self):
         """Start the tick collection process."""

@@ -21,6 +21,7 @@ services:
       - ../src:/opt/spark/src
       - ../configs:/opt/spark/configs
     container_name: spark-master
+    user: root # Added this line to run as root
     healthcheck:
       test: [ "CMD-SHELL", "ps aux | grep org.apache.spark.deploy.master.Master | grep -v grep || exit 1" ]
       interval: 10s
@@ -28,7 +29,7 @@ services:
       retries: 3
       start_period: 30s
     networks:
-      - trading-network # Added this to explicitly declare network
+      - trading-network
 
   spark-worker:
     build:
@@ -53,7 +54,7 @@ services:
     deploy:
       replicas: 1
     networks:
-      - trading-network # Added this to explicitly declare network
+      - trading-network
 
 networks:
   trading-network:
