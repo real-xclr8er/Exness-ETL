@@ -1,116 +1,101 @@
-# Python-related files and directories
-
-**pycache**/
-\*.py[cod]
-\*\$py.class
-\*.so
+# General Python ignores
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+.eggs/
+*.pyo
+*.pyd
 .Python
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-\*.egg-info/
-.installed.cfg
-\*.egg
+*.so
 
-# Virtual environments andCan local configuration
-
+# Virtual environment directories
 venv/
 .env/
+project_env/
 env/
-.env
 .env.local
-.python-version
+
+# Logs
+*.log
 pip-log.txt
 pip-delete-this-directory.txt
 
-# IDE and editor specific files
+# Data files
+data/
+!/data/processed/.gitkeep
+!/data/raw/.gitkeep
 
-.idea/
-.vscode/
-\*.swp
-\*.swo
-\*\~
-\*.sublime-project
-\*.sublime-workspace
+data/ticks/**/*.parquet
+*.parquet
+data/test_data.parquet
 
-# Operating System generated files
-
-.DS\_Store
-Thumbs.db
-
-# Project specific data files
-
-data/raw/**/\*.csv
+data/raw/**/*.csv
 data/processed/**/*.csv
-data/ticks/\*\*/*.parquet
-\*.log
-\*.parquet
-\*.bak
-\*.tmp
 
-# MetaTrader specific files
-
-\*.ini
-\*.set
-\*.dat
-\*.ex4
-\*.ex5
-\*.hst
-\*.fxt
-
-# Spark specific files and directories
-
-derby.log
-metastore\_db/
-spark-warehouse/
-\*.crc
-
-# SQL and database files
-
-*.sql
-database\_backups/
-market\_data\_backup.sql
-postgresql-*.jar
-
-# Docker related files
-
+# Docker-related files
+*.crl
+*.lock
 .docker/
 docker-compose.override.yml
+docker/Dockerfile.crl
+
+docker/init-scripts/*.sql  # Keep SQL init scripts
+
+# IDE-specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+~*
+*.sublime-project
+*.sublime-workspace
+
+# Experimental directories
+xauusd_project/
+
+# Operating System generated files
+.DS_Store
+Thumbs.db
+
+# MetaTrader specific files
+*.ini
+*.set
+*.dat
+*.ex4
+*.ex5
+*.hst
+*.fxt
+
+# Spark specific files and directories
+derby.log
+metastore_db/
+spark-warehouse/
+*.crc
+
+# SQL and database files
+*.sql
+database_backups/
+market_data_backup.sql
+postgresql-*.jar
 
 # Jupyter Notebook
-
-.ipynb\_checkpoints
-\*.ipynb
+.ipynb_checkpoints
+*.ipynb
 
 # Node and npm (if applicable)
-
-node\_modules/
+node_modules/
 package-lock.json
 
 # PyInstaller
-
-\*.spec
+*.spec
 tree.txt
 
-# Keep empty directories
-
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!data/ticks/.gitkeep
-
 # Explicitly keep these files
-
 !requirements.txt
 !README.md
-!docker/init-scripts/\*.sql  # Keep SQL init scripts
 
 # Backup files and directories
 backups/
@@ -121,13 +106,7 @@ lib/
 # Build and distribution artifacts
 build/
 
-# Parquet data files
-data/**/*.parquet
-data/test_data.parquet/
-
-# Docker-related files
-docker/Dockerfile.crl
-
-# Experimental or project-specific directories
-xauusd_project/
-
+# Explicit keeps for empty directories
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/ticks/.gitkeep
