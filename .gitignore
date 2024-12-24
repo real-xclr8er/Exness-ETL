@@ -1,8 +1,9 @@
 # Python-related files and directories
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
+
+**pycache**/
+\*.py[cod]
+\*\$py.class
+\*.so
 .Python
 build/
 develop-eggs/
@@ -15,11 +16,12 @@ lib64/
 parts/
 sdist/
 var/
-*.egg-info/
+\*.egg-info/
 .installed.cfg
-*.egg
+\*.egg
 
-# Virtual environments and local configuration
+# Virtual environments andCan local configuration
+
 venv/
 .env/
 env/
@@ -30,70 +32,92 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # IDE and editor specific files
+
 .idea/
 .vscode/
-*.swp
-*.swo
-*~
-*.sublime-project
-*.sublime-workspace
+\*.swp
+\*.swo
+\*\~
+\*.sublime-project
+\*.sublime-workspace
 
 # Operating System generated files
-.DS_Store
+
+.DS\_Store
 Thumbs.db
 
 # Project specific data files
-data/raw/**/*.csv
+
+data/raw/**/\*.csv
 data/processed/**/*.csv
-data/ticks/**/*.parquet
-*.log
-*.parquet
-*.bak
-*.tmp
+data/ticks/\*\*/*.parquet
+\*.log
+\*.parquet
+\*.bak
+\*.tmp
 
 # MetaTrader specific files
-*.ini
-*.set
-*.dat
-*.ex4
-*.ex5
-*.hst
-*.fxt
+
+\*.ini
+\*.set
+\*.dat
+\*.ex4
+\*.ex5
+\*.hst
+\*.fxt
 
 # Spark specific files and directories
+
 derby.log
-metastore_db/
+metastore\_db/
 spark-warehouse/
-*.crc
+\*.crc
 
 # SQL and database files
+
 *.sql
-database_backups/
-market_data_backup.sql
+database\_backups/
+market\_data\_backup.sql
 postgresql-*.jar
 
 # Docker related files
+
 .docker/
 docker-compose.override.yml
 
 # Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
+
+.ipynb\_checkpoints
+\*.ipynb
 
 # Node and npm (if applicable)
-node_modules/
+
+node\_modules/
 package-lock.json
 
 # PyInstaller
-*.spec
+
+\*.spec
 tree.txt
 
 # Keep empty directories
+
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/ticks/.gitkeep
 
 # Explicitly keep these files
+
 !requirements.txt
 !README.md
-!docker/init-scripts/*.sql  # Keep SQL init scripts
+!docker/init-scripts/\*.sql  # Keep SQL init scripts
+
+# Backup files and directories
+backups/
+
+# Library files and dependencies
+lib/
+
+# Build and distribution artifacts
+build/
+
