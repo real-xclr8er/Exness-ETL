@@ -10,7 +10,6 @@ This Windows-based algorithmic trading system integrates TimescaleDB, Spark, and
 - ✓ Real-time tick data collection implemented
 - ✓ Efficient Parquet and TimescaleDB hybrid storage system established
 - ✓ Database deduplication and integrity mechanisms in place
-- ✓ Background process capability with system tray interface
 
 ## Current Features
 
@@ -140,8 +139,8 @@ docker exec -it market_data_db psql -U market_collector -d market_data
 SELECT COUNT(*) FROM market_data.tick_data;
 
 -- View data range by symbol
-SELECT symbol, 
-       MIN(tick_time) AS first_tick, 
+SELECT symbol,
+       MIN(tick_time) AS first_tick,
        MAX(tick_time) AS last_tick
 FROM market_data.tick_data
 GROUP BY symbol;
