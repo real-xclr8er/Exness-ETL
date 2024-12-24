@@ -121,3 +121,13 @@ lib/
 # Build and distribution artifacts
 build/
 
+# Parquet data files
+data/**/*.parquet
+data/test_data.parquet/
+
+# Docker-related files
+docker/Dockerfile.crl
+
+# Experimental or project-specific directories
+xauusd_project/
+
