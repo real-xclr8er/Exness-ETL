@@ -1,135 +1,165 @@
-#!/usr/bin/env python3
-import MetaTrader5 as mt5
-import pandas as pd
-import numpy as np
-from datetime import datetime, timezone
-import logging
-from pathlib import Path
+# tick_collector.py: Real-Time Tick Data Collector for MetaTrader 5
+
 import threading
-import queue
+import logging
+import MetaTrader5 as mt5
 import psycopg2
+import pandas as pd
+from queue import Queue
+from pathlib import Path
+from datetime import datetime, time
 
-class TickCollector:
-    def __init__(self, config_path="configs/collector_config.yml"):
-        self.logger = logging.getLogger(__name__)
-        self.setup_logging()
+# Configuration for PostgreSQL
+POSTGRES_CONFIG = {
+    "dbname": "market_data",
+    "user": "market_collector",
+    "password": "1331",
+    "host": "localhost",
+    "port": 15433,
+}
 
-        # Load configuration
-        self.symbols = ["AUDUSD", "BTCUSD", "US30", "US500", "USTEC", "XAUUSD"]
-        self.storage_path = Path("data/ticks")
-        self.storage_path.mkdir(parents=True, exist_ok=True)
+# Directory for Parquet file storage
+DATA_DIR = Path("C:/DevProjects/trading_system/data/ticks")
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-        self.db_config = {
-            "dbname": "market_data",
-            "user": "market_collector",
-            "password": "1331",
-            "host": "localhost",
-            "port": 15433
-        }
+# Symbols to collect data for
+SYMBOLS = [
+    "AUDUSD", "BTCJPY", "CHFJPY", "EURUSD",
+    "GBPJPY", "US30", "USDJPY", "USTEC", "XAUUSD", "BTCUSD"
+]
 
-        self.running = threading.Event()
-        self.threads = {}
-        self.data_queues = {symbol: queue.Queue() for symbol in self.symbols}
+# Buffer for batch database writes
+DATA_BUFFERS = {symbol: Queue() for symbol in SYMBOLS}
 
-    def setup_logging(self):
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s - %(levelname)s - %(message)s",
-            handlers=[logging.FileHandler("tick_collector.log"), logging.StreamHandler()]
-        )
-        self.logger.info("Logging initialized.")
+# Logging configuration
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-    def initialize_mt5(self):
-        if not mt5.initialize():
-            self.logger.error(f"MT5 initialization failed: {mt5.last_error()}")
+def connect_to_postgres():
+    try:
+        conn = psycopg2.connect(**POSTGRES_CONFIG)
+        return conn
+    except Exception as e:
+        logging.error(f"Failed to connect to PostgreSQL: {e}")
+        return None
+
+def save_to_postgres(symbol):
+    """Save data from the buffer to PostgreSQL in batches."""
+    conn = connect_to_postgres()
+    if not conn:
+        return
+
+    while True:
+        data = []
+        while not DATA_BUFFERS[symbol].empty():
+            data.append(DATA_BUFFERS[symbol].get())
+
+        if data:
+            try:
+                cursor = conn.cursor()
+                query = """
+                INSERT INTO market_data.tick_data (symbol, tick_time, bid_price, ask_price, spread)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT DO NOTHING;
+                """
+                cursor.executemany(query, data)
+                conn.commit()
+                logging.info(f"Saved {len(data)} ticks for {symbol} to PostgreSQL.")
+            except Exception as e:
+                logging.error(f"Error saving data to PostgreSQL for {symbol}: {e}")
+
+        threading.Event().wait(15)  # Save every 15 seconds
+
+    conn.close()
+
+def save_to_parquet(symbol, tick):
+    """Save tick data to Parquet file."""
+    date = datetime.fromtimestamp(tick.time).strftime("%Y%m%d")
+    file_path = DATA_DIR / symbol / f"{date}.parquet"
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    df = pd.DataFrame([{  # Prepare DataFrame for saving
+        "symbol": symbol,
+        "tick_time": datetime.fromtimestamp(tick.time),
+        "bid_price": tick.bid,
+        "ask_price": tick.ask,
+        "spread": tick.ask - tick.bid,
+    }])
+
+    try:
+        if file_path.exists():
+            existing = pd.read_parquet(file_path)
+            df = pd.concat([existing, df]).drop_duplicates()
+        df.to_parquet(file_path, index=False, engine="pyarrow", compression="snappy")
+        logging.info(f"Saved tick data for {symbol} to {file_path}.")
+    except Exception as e:
+        logging.error(f"Error saving data to Parquet for {symbol}: {e}")
+
+def is_market_open(symbol):
+    """Check if the market is open for the given symbol."""
+    now = datetime.now()
+
+    # Forex symbols: Closed on weekends and 1 hour daily (e.g., 22:00-23:00 UTC)
+    if symbol != "BTCUSD":
+        if now.weekday() in (5, 6):  # Saturday or Sunday
             return False
-        self.logger.info("MT5 initialized successfully.")
-        return True
+        if time(22, 0) <= now.time() < time(23, 0):  # Daily maintenance hour
+            return False
 
-    def collect_symbol_ticks(self, symbol):
-        self.logger.info(f"Starting tick collection for {symbol}")
-        while self.running.is_set():
-            tick = mt5.symbol_info_tick(symbol)
-            if tick:
-                tick_data = {
-                    'time': datetime.fromtimestamp(tick.time_msc / 1000.0, tz=timezone.utc),
-                    'bid': tick.bid,
-                    'ask': tick.ask,
-                    'last': getattr(tick, 'last', None),
-                    'volume': getattr(tick, 'volume', None)
-                }
-                self.data_queues[symbol].put(tick_data)
-            threading.Event().wait(0.01)
+    # Additional check for MT5 server status
+    if not mt5.symbol_info(symbol):
+        logging.warning(f"Symbol {symbol} is not available or server is under maintenance.")
+        return False
 
-    def save_ticks(self, symbol, ticks):
-        # Save to Parquet
-        file_path = self.storage_path / f"{symbol}/{datetime.now().strftime('%Y%m%d')}.parquet"
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            if file_path.exists():
-                existing_data = pd.read_parquet(file_path)
-                new_data = pd.DataFrame(ticks)
-                combined_data = pd.concat([existing_data, new_data]).drop_duplicates()
-            else:
-                combined_data = pd.DataFrame(ticks)
-            combined_data.to_parquet(file_path, engine="pyarrow", index=False, compression="snappy")
-            self.logger.info(f"Saved {len(ticks)} ticks for {symbol} to Parquet.")
-        except Exception as e:
-            self.logger.error(f"Error saving ticks for {symbol} to Parquet: {e}")
+    return True
 
-        # Save to TimescaleDB
-        try:
-            conn = psycopg2.connect(**self.db_config)
-            cursor = conn.cursor()
-            for tick in ticks:
-                cursor.execute(
-                    """
-                    INSERT INTO tick_data (symbol, tick_time, bid_price, ask_price, last_price, volume)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    ON CONFLICT DO NOTHING;
-                    """,
-                    (symbol, tick['time'], tick['bid'], tick['ask'], tick.get('last'), tick.get('volume'))
-                )
-            conn.commit()
-            cursor.close()
-            conn.close()
-            self.logger.info(f"Saved {len(ticks)} ticks for {symbol} to TimescaleDB.")
-        except Exception as e:
-            self.logger.error(f"Error saving ticks for {symbol} to TimescaleDB: {e}")
+def collect_ticks(symbol):
+    """Collect real-time ticks for a specific symbol."""
+    while True:
+        if not is_market_open(symbol):
+            logging.info(f"Market is closed for {symbol}. Skipping tick collection.")
+            threading.Event().wait(60)  # Wait for 1 minute before re-checking
+            continue
 
-    def process_queues(self):
-        while self.running.is_set():
-            for symbol, q in self.data_queues.items():
-                if not q.empty():
-                    ticks = []
-                    while not q.empty():
-                        ticks.append(q.get())
-                    self.save_ticks(symbol, ticks)
-            threading.Event().wait(1)
+        tick = mt5.symbol_info_tick(symbol)
+        if tick:
+            tick_data = (
+                symbol,
+                datetime.fromtimestamp(tick.time),
+                tick.bid,
+                tick.ask,
+                tick.ask - tick.bid
+            )
+            DATA_BUFFERS[symbol].put(tick_data)
+            save_to_parquet(symbol, tick)
+        threading.Event().wait(0.1)  # Collect data every 100ms
 
-    def start(self):
-        if not self.initialize_mt5():
-            return
-        self.running.set()
-        for symbol in self.symbols:
-            thread = threading.Thread(target=self.collect_symbol_ticks, args=(symbol,))
-            thread.start()
-            self.threads[symbol] = thread
-        threading.Thread(target=self.process_queues).start()
-        self.logger.info("Tick collection started.")
+def main():
+    if not mt5.initialize():
+        logging.error("MetaTrader 5 initialization failed.")
+        return
 
-    def stop(self):
-        self.running.clear()
-        for thread in self.threads.values():
-            thread.join()
+    threads = []
+
+    # Start PostgreSQL saving threads
+    for symbol in SYMBOLS:
+        t = threading.Thread(target=save_to_postgres, args=(symbol,), daemon=True)
+        threads.append(t)
+        t.start()
+
+    # Start tick collection threads
+    for symbol in SYMBOLS:
+        t = threading.Thread(target=collect_ticks, args=(symbol,), daemon=True)
+        threads.append(t)
+        t.start()
+
+    logging.info("Tick collector is running. Press Ctrl+C to stop.")
+    try:
+        for t in threads:
+            t.join()
+    except KeyboardInterrupt:
+        logging.info("Stopping tick collector...")
+    finally:
         mt5.shutdown()
-        self.logger.info("Tick collection stopped.")
 
 if __name__ == "__main__":
-    collector = TickCollector()
-    try:
-        collector.start()
-        while True:
-            threading.Event().wait(1)
-    except KeyboardInterrupt:
-        collector.stop()
+    main()
